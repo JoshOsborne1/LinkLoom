@@ -1,10 +1,16 @@
+// This is the updated content for your ROOT `package.json` file.
+
 {
   "name": "linkloom-project",
   "version": "1.0.0",
   "description": "LinkLoom Daily Puzzle Game",
   "scripts": {
-    "build": "echo 'Build script placeholder'"
+    "build": "netlify-lambda build src"
   },
   "dependencies": {
     "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "netlify-lambda": "^2.0.16"
   }
+}
