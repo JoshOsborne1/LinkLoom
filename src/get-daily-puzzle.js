@@ -6,14 +6,14 @@ export const handler = async function(event, context) {
     const FIREBASE_PRIVATE_KEY = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
     // --- Step 1: Authenticate with Firebase ---
-    const authUrl = '[https://oauth2.googleapis.com/token](https://oauth2.googleapis.com/token)';
+    const authUrl = 'https://oauth2.googleapis.com/token';
     const claims = {
         iss: FIREBASE_CLIENT_EMAIL,
         sub: FIREBASE_CLIENT_EMAIL,
         aud: authUrl,
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 3600,
-        scope: '[https://www.googleapis.com/auth/datastore](https://www.googleapis.com/auth/datastore)'
+        scope: 'https://www.googleapis.com/auth/datastore'
     };
 
     let accessToken;
