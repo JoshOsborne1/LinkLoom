@@ -1,22 +1,19 @@
-// File 2: src/get-daily-puzzle.js
-// This version also has enhanced error logging.
+import { sign } from 'jsonwebtoken';
 
-const { sign } = require('jsonwebtoken');
-
-exports.handler = async function(event, context) {
+export const handler = async function(event, context) {
     const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
     const FIREBASE_CLIENT_EMAIL = process.env.FIREBASE_CLIENT_EMAIL;
     const FIREBASE_PRIVATE_KEY = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
     // --- Step 1: Authenticate with Firebase ---
-    const authUrl = 'https://oauth2.googleapis.com/token';
+    const authUrl = '[https://oauth2.googleapis.com/token](https://oauth2.googleapis.com/token)';
     const claims = {
         iss: FIREBASE_CLIENT_EMAIL,
         sub: FIREBASE_CLIENT_EMAIL,
         aud: authUrl,
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 3600,
-        scope: 'https://www.googleapis.com/auth/datastore'
+        scope: '[https://www.googleapis.com/auth/datastore](https://www.googleapis.com/auth/datastore)'
     };
 
     let accessToken;
@@ -61,7 +58,7 @@ exports.handler = async function(event, context) {
 
         return {
             statusCode: 200,
-            body: puzzleJsonString // Return the raw JSON string
+            body: puzzleJsonString
         };
     } catch (error) {
         console.error("Error fetching puzzle:", error);
