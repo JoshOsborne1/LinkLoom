@@ -2,7 +2,9 @@
   "name": "linkloom-project",
   "version": "1.0.0",
   "description": "LinkLoom Daily Puzzle Game",
+  "scripts": {
+    "build": "echo 'Build script placeholder'"
+  },
   "dependencies": {
     "jsonwebtoken": "^9.0.2"
   }
-}
