@@ -1,5 +1,5 @@
 // File 1: src/generate-and-store-puzzle.js
-// This version has the most detailed error logging to catch the full API response.
+// This version has the corrected Firestore URL.
 
 const { sign } = require('jsonwebtoken');
 
@@ -64,11 +64,7 @@ Also provide a 'link_hint' for the final link.`;
             body: JSON.stringify(geminiPayload)
         });
         
-        // ** NEW DEBUGGING CODE **
-        // We will now log the entire response body as text to see exactly what we're getting.
         const responseBodyText = await geminiResponse.text();
-        console.log("Full raw response from Gemini:", responseBodyText);
-
         if (!geminiResponse.ok) {
             console.error("Gemini API Error:", responseBodyText);
             throw new Error(`Gemini API failed with status: ${geminiResponse.status}`);
@@ -123,7 +119,8 @@ Also provide a 'link_hint' for the final link.`;
     }
 
     // --- Step 3: Save the new puzzle to the Firestore database ---
-    const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/puzzles`;
+    // ** THE FIX IS HERE: The puzzleId is now part of the URL path, not a query parameter. **
+    const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/puzzles/${puzzleId}`;
     const firestorePayload = {
         fields: {
             puzzleId: { integerValue: puzzleId },
@@ -132,7 +129,7 @@ Also provide a 'link_hint' for the final link.`;
     };
 
     try {
-        const firestoreResponse = await fetch(`${firestoreUrl}?documentId=${puzzleId}`, {
+        const firestoreResponse = await fetch(firestoreUrl, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(firestorePayload)
