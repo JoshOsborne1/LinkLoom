@@ -1,9 +1,10 @@
 // File: src/generate-and-store-puzzle.js
-// This is the updated version with detailed error logging.
+// This is the final, production-ready version of the function.
 
 const { sign } = require('jsonwebtoken');
 
 exports.handler = async function(event, context) {
+    // Load all the secret keys from Netlify's environment variables.
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
     const FIREBASE_CLIENT_EMAIL = process.env.FIREBASE_CLIENT_EMAIL;
@@ -63,14 +64,11 @@ Also provide a 'link_hint' for the final link.`;
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(geminiPayload)
         });
-
-        // ** NEW DEBUGGING CODE **
         if (!geminiResponse.ok) {
-            const errorBody = await geminiResponse.json();
+             const errorBody = await geminiResponse.json();
             console.error("Gemini API Error Response:", JSON.stringify(errorBody, null, 2));
             throw new Error(`Gemini API failed with status: ${geminiResponse.status}`);
         }
-        
         const geminiResult = await geminiResponse.json();
         puzzleData = JSON.parse(geminiResult.candidates[0].content.parts[0].text);
     } catch (error) {
@@ -78,12 +76,58 @@ Also provide a 'link_hint' for the final link.`;
         return { statusCode: 500, body: "Failed to generate puzzle from Gemini." };
     }
 
-    // The rest of the function (Firebase auth and save) remains the same...
-    // ... (Firebase code omitted for brevity as it's not the source of the error)
+    // --- Step 2: Authenticate with the Firebase REST API ---
+    const authUrl = 'https://oauth2.googleapis.com/token';
+    const claims = {
+        iss: FIREBASE_CLIENT_EMAIL,
+        sub: FIREBASE_CLIENT_EMAIL,
+        aud: authUrl,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 3600, // Token is valid for 1 hour
+        scope: 'https://www.googleapis.com/auth/datastore'
+    };
+    const token = sign(claims, FIREBASE_PRIVATE_KEY, { algorithm: 'RS256' });
+
+    let accessToken;
+    try {
+        const authResponse = await fetch(authUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${token}`
+        });
+        const authData = await authResponse.json();
+        accessToken = authData.access_token;
+    } catch (error) {
+        console.error("Error getting Firebase token:", error);
+        return { statusCode: 500, body: "Failed to authenticate with Firebase." };
+    }
+
+    // --- Step 3: Save the new puzzle to the Firestore database ---
+    const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/puzzles`;
     
-    // For now, let's just confirm we got the puzzle data
-     return {
+    const firestorePayload = {
+        fields: {
+            puzzleId: { integerValue: puzzleId },
+            data: { stringValue: JSON.stringify(puzzleData) }
+        }
+    };
+
+    try {
+        await fetch(`${firestoreUrl}?documentId=${puzzleId}`, {
+            method: 'PATCH', // Use PATCH to create or overwrite the document
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(firestorePayload)
+        });
+    } catch (error) {
+        console.error("Error saving to Firestore:", error);
+        return { statusCode: 500, body: "Failed to save puzzle to database." };
+    }
+
+    return {
         statusCode: 200,
-        body: `Successfully generated puzzle data: ${JSON.stringify(puzzleData)}`
+        body: `Successfully generated and stored puzzle #${puzzleId}.`
     };
 };
