@@ -4,6 +4,7 @@
   publish = "."
 
 [functions."generate-and-store-puzzle"]
- schedule = "0 0 * * *"
+# schedule = "0 0 * * *"
+
 
 
